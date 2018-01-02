@@ -253,7 +253,7 @@ def main(argv=None):
     plt.yscale('log')
     plt.show()
 
-    # scio.savemat('./RadioNN_performance.mat', {'SNR_DB_RANGE': SNR_DB_RANGE, 'SER': SER})
+    scio.savemat('./RadioNN_performance.mat', {'SNR_DB_RANGE': SNR_DB_RANGE, 'SER': SER})
 
 
 if __name__ == '__main__':
