@@ -195,11 +195,11 @@ def train(radioCNN, chan_data, SNR, output_accuracy=False, MAX_PILOT_NUM=50000, 
     return test_accuracy, radioCNN
 
 # Define main function
-# SNR_NUM = 5
-# SNR_DB_RANGE = np.linspace(0, 7, SNR_NUM)
+SNR_NUM = 5
+SNR_DB_RANGE = np.linspace(0, 7, SNR_NUM)
 
-SNR_NUM = 1
-SNR_DB_RANGE = [7]
+# SNR_NUM = 1
+# SNR_DB_RANGE = [7]
 
 MAT_FILE_NAME = './conv_chan_data.mat'
 SER_FILE_NAME = './SER_benchmark.mat'
@@ -235,7 +235,7 @@ def main(argv=None):
             radioCNN = radioCNN_inst,
             chan_data = chan_data, 
             SNR = SNR, 
-            output_accuracy=True, 
+            output_accuracy=False, 
             MAX_PILOT_NUM=50000,
             TRAINING_STEPS=10000
         )
