@@ -237,7 +237,7 @@ def main(argv=None):
             SNR = SNR, 
             output_accuracy=False, 
             MAX_PILOT_NUM=50000,
-            TRAINING_STEPS=10000
+            TRAINING_STEPS=20000
         )
         SER[id_SNR] = 1 - Accuracy
 
