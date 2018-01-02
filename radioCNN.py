@@ -100,6 +100,9 @@ class RadioCNN(object):
         self.sess = tf.Session()
         self.sess.run(init_op)
 
+        # finalize
+        self.sess.graph.finalize()
+
     def _initialize_weights(self):
         w_dict = dict()
 
@@ -237,7 +240,7 @@ def main(argv=None):
             SNR = SNR, 
             output_accuracy=False, 
             MAX_PILOT_NUM=50000,
-            TRAINING_STEPS=20000
+            TRAINING_STEPS=1000
         )
         SER[id_SNR] = 1 - Accuracy
 
