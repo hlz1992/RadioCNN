@@ -151,26 +151,26 @@ def initiate_RadioCNN(transfer_function = tf.nn.softplus, optimizer=tf.train.Ada
 BATCH_SIZE = 100
 LEARNING_RATE = 1e-4
 
-def train(radioCNN, chan_data, SNR, output_accuracy=False, MAX_PILOT_NUM=50000, TRAINING_STEPS=10000):
+def train(radioCNN, chan_data, SNR, output_process=False, show_performance=False, MAX_PILOT_NUM=50000, TRAINING_STEPS=10000):
 
     loss_rec = np.zeros(TRAINING_STEPS)
-    total_SER = np.zeros(int(TRAINING_STEPS / 1000))
-    total_SER_count = 0
+    temp_SER = np.zeros(int(TRAINING_STEPS / 1000))
+    temp_SER_count = 0
     for id_step in range(TRAINING_STEPS):
 
         idx = np.random.randint(0, MAX_PILOT_NUM, size=BATCH_SIZE)
         X_batch = chan_data['sample_data'][idx, :]
         Y_batch = chan_data['sample_tag'][idx, :]
 
-        if (id_step+1) % 1000 == 0 and output_accuracy:
-            total_accuracy = radioCNN.eval_accuracy(
-                chan_data['test_data'],
-                chan_data['test_tag']
+        if (id_step+1) % 1000 == 0 and output_process:
+            temp_accuracy = radioCNN.eval_accuracy(
+                X_batch,
+                Y_batch
             )
-            total_SER[total_SER_count] = 1 - total_accuracy
-            print('At step {0}, TOTAL SER is {1}.'.format(id_step, total_SER[total_SER_count]))
+            temp_SER[temp_SER_count] = 1 - temp_accuracy
+            print('At step {0}, temporary SER is {1}.'.format(id_step, temp_SER[temp_SER_count]))
             
-            total_SER_count += 1
+            temp_SER_count += 1
             
         loss_rec[id_step] = radioCNN.partial_train(
             X_batch,
@@ -184,25 +184,25 @@ def train(radioCNN, chan_data, SNR, output_accuracy=False, MAX_PILOT_NUM=50000, 
     )
 
     # Show total SER
-    # if output_accuracy:
-    #     plt.subplot(2, 1, 1)
-    #     plt.plot(np.arange(int(TRAINING_STEPS / 1000)), total_SER, 'bo-', label='SER')
-    #     plt.legend()
-    #     plt.yscale('log')
+    if show_performance:
+        plt.subplot(2, 1, 1)
+        plt.plot(np.arange(int(TRAINING_STEPS / 1000)), temp_SER, 'bo-', label='SER')
+        plt.legend()
+        plt.yscale('log')
 
-    #     plt.subplot(2, 1, 2)
-    #     plt.plot(np.arange(TRAINING_STEPS), loss_rec, 'b-', label='cross entropy')
-    #     plt.legend()
-    #     plt.show()
+        plt.subplot(2, 1, 2)
+        plt.plot(np.arange(TRAINING_STEPS), loss_rec, 'b-', label='cross entropy')
+        plt.legend()
+        plt.show()
 
     return test_accuracy, radioCNN
 
 # Define main function
-SNR_NUM = 5
-SNR_DB_RANGE = np.linspace(0, 7, SNR_NUM)
+# SNR_NUM = 5
+# SNR_DB_RANGE = np.linspace(0, 7, SNR_NUM)
 
-# SNR_NUM = 1
-# SNR_DB_RANGE = [7]
+SNR_NUM = 1
+SNR_DB_RANGE = [7]
 
 MAT_FILE_NAME = './conv_chan_data.mat'
 SER_FILE_NAME = './SER_benchmark.mat'
@@ -238,8 +238,10 @@ def main(argv=None):
             radioCNN = radioCNN_inst,
             chan_data = chan_data, 
             SNR = SNR, 
-            output_accuracy=False, 
-            MAX_PILOT_NUM=50000,
+            output_process=True, 
+            show_performance=False,
+            MAX_PILOT_NUM=1000,
+            # MAX_PILOT_NUM=50000,
             TRAINING_STEPS=20000
         )
         SER[id_SNR] = 1 - Accuracy
