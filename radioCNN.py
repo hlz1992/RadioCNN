@@ -240,7 +240,7 @@ def main(argv=None):
             SNR = SNR, 
             output_process=True, 
             show_performance=False,
-            MAX_PILOT_NUM=9000,
+            MAX_PILOT_NUM=11000,
             # MAX_PILOT_NUM=50000,
             TRAINING_STEPS=20000
         )
