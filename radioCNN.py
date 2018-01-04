@@ -151,7 +151,7 @@ def initiate_RadioCNN(transfer_function = tf.nn.softplus, optimizer=tf.train.Ada
 BATCH_SIZE = 100
 LEARNING_RATE = 1e-4
 
-def train(radioCNN, chan_data, SNR, output_process=False, show_performance=False, MAX_PILOT_NUM=50000, TRAINING_STEPS=10000):
+def train(radioCNN, chan_data, output_process=False, show_performance=False, MAX_PILOT_NUM=50000, TRAINING_STEPS=10000):
 
     loss_rec = np.zeros(TRAINING_STEPS)
     temp_SER = np.zeros(int(TRAINING_STEPS / 1000))
@@ -204,9 +204,6 @@ SNR_DB_RANGE = np.linspace(0, 7, SNR_NUM)
 # SNR_NUM = 1
 # SNR_DB_RANGE = [7]
 
-MAT_FILE_NAME = './conv_chan_data.mat'
-SER_FILE_NAME = './SER_benchmark.mat'
-
 def main(argv=None):
 
     # Initiate RadioNN
@@ -216,31 +213,23 @@ def main(argv=None):
         learning_rate=1e-4,
         weight_loss=0.05
     )
-
-    # Read in data & training
-    chan_data = scio.loadmat(MAT_FILE_NAME)
-    SER_benchmark = scio.loadmat(SER_FILE_NAME)
-
-    sample_data_temp = chan_data['sample_data']
-    test_data_temp = chan_data['test_data']
     
     SER = np.zeros([SNR_NUM])
     for id_SNR in range(SNR_NUM):
         print('-------------SNR: {0} dB-------------'.format(SNR_DB_RANGE[id_SNR]))
 
         start_time = time.time()
-        SNR = 10**(SNR_DB_RANGE[id_SNR]/10)
-        chan_data['sample_data'] = sample_data_temp + np.random.randn(matlab_sample_num, INPUT_FLAT_DIM) / (2 * SNR)
-        chan_data['test_data'] = test_data_temp + np.random.randn(matlab_data_num, INPUT_FLAT_DIM) / (2 * SNR)
+
+        MAT_FILE_NAME = './conv_chan_data_AUG_idSNR_{0}'.format(id_SNR+1)
+        chan_data = scio.loadmat(MAT_FILE_NAME)
 
         # Reference: MAX_PILOT_NUM = 1000, TRAINING_STEPS = 20000
         Accuracy, radioCNN_inst = train(
             radioCNN = radioCNN_inst,
             chan_data = chan_data, 
-            SNR = SNR, 
             output_process=True, 
             show_performance=False,
-            MAX_PILOT_NUM=1000,
+            MAX_PILOT_NUM=6000,
             TRAINING_STEPS=20000
         )
         SER[id_SNR] = 1 - Accuracy
@@ -248,6 +237,7 @@ def main(argv=None):
         print('Total SER = {0}.'.format(SER[id_SNR]))
         print('Time consumed is {0} seconds'.format(time.time() - start_time))
 
+    SER_benchmark = scio.loadmat('./SER_benchmark.mat')
     plt.plot(SNR_DB_RANGE, SER, 'bo-', label='RadioNN')
     plt.plot(SER_benchmark['SNRdBRng'][0, :], SER_benchmark['SER_mmse'][0, :], 'rx--', label='MMSE')
     plt.plot(SER_benchmark['SNRdBRng'][0, :], SER_benchmark['SER_ls'][0, :], 'r<-', label='ls')
