@@ -205,6 +205,7 @@ SNR_DB_RANGE = np.linspace(0, 7, SNR_NUM)
 # SNR_DB_RANGE = [7]
 
 MAT_FILE_NAME = './conv_chan_data.mat'
+MAT_FILE_NEW_NAME = './conv_chan_data_new.mat'
 SER_FILE_NAME = './SER_benchmark.mat'
 
 def main(argv=None):
@@ -219,12 +220,17 @@ def main(argv=None):
 
     # Read in data & training
     chan_data = scio.loadmat(MAT_FILE_NAME)
+    chan_data_new = scio.loadmat(MAT_FILE_NEW_NAME)
+
     SER_benchmark = scio.loadmat(SER_FILE_NAME)
 
     sample_data_temp = chan_data['sample_data']
     test_data_temp = chan_data['test_data']
+    
+    test_data_new_temp = chan_data_new['test_data']
 
     SER = np.zeros([SNR_NUM])
+    SER_new = np.zeros([SNR_NUM])
     for id_SNR in range(SNR_NUM):
         print('-------------SNR: {0} dB-------------'.format(SNR_DB_RANGE[id_SNR]))
 
@@ -233,6 +239,8 @@ def main(argv=None):
         chan_data['sample_data'] = sample_data_temp + np.random.randn(matlab_sample_num, INPUT_FLAT_DIM) / (2 * SNR)
         chan_data['test_data'] = test_data_temp + np.random.randn(matlab_data_num, INPUT_FLAT_DIM) / (2 * SNR)
 
+        chan_data_new['test_data'] = test_data_new_temp + np.random.randn(matlab_data_num, INPUT_FLAT_DIM) / (2 * SNR)
+
         # Reference: MAX_PILOT_NUM = 50000, TRAINING_STEPS = 10000
         Accuracy, radioCNN_inst = train(
             radioCNN = radioCNN_inst,
@@ -240,16 +248,22 @@ def main(argv=None):
             SNR = SNR, 
             output_process=True, 
             show_performance=False,
-            MAX_PILOT_NUM=11000,
-            # MAX_PILOT_NUM=50000,
+            MAX_PILOT_NUM=10000,
             TRAINING_STEPS=20000
         )
         SER[id_SNR] = 1 - Accuracy
 
-        print('Total SER = {0}.'.format(SER[id_SNR]))
+        Accuracy_new = radioCNN_inst.eval_accuracy(
+            chan_data_new['test_data'],
+            chan_data_new['test_tag']
+        )
+        SER_new[id_SNR] = 1 - Accuracy_new
+
+        print('Total SER = {0}, SER (new) is {1}.'.format(SER[id_SNR], SER_new[id_SNR]))
         print('Time consumed is {0} seconds'.format(time.time() - start_time))
 
     plt.plot(SNR_DB_RANGE, SER, 'bo-', label='RadioNN')
+    plt.plot(SNR_DB_RANGE, SER_new, 'bo--', label='RadioNN')
     plt.plot(SER_benchmark['SNRdBRng'][0, :], SER_benchmark['SER_mmse'][0, :], 'rx--', label='MMSE')
     plt.plot(SER_benchmark['SNRdBRng'][0, :], SER_benchmark['SER_ls'][0, :], 'r<-', label='ls')
     plt.legend()
@@ -258,7 +272,7 @@ def main(argv=None):
     plt.yscale('log')
     plt.show()
 
-    scio.savemat('./RadioNN_performance.mat', {'SNR_DB_RANGE': SNR_DB_RANGE, 'SER': SER})
+    scio.savemat('./RadioNN_performance.mat', {'SNR_DB_RANGE': SNR_DB_RANGE, 'SER': SER, 'SER_new': SER_new})
 
 
 if __name__ == '__main__':

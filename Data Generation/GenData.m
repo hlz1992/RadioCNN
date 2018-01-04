@@ -11,8 +11,11 @@ chan_len = 16;
 input_dim = [2, 41];    % channeled symbols
 output_dim = mod;
 
-pilot_num = 5e4;
-data_num = 1e4;
+total_num = 3e4;
+sample_indices_temp = randerr(1, total_num, 2e4);
+sample_indices = find(sample_indices_temp > 0).';
+pilot_num = length(sample_indices);
+data_num = total_num - pilot_num;
 
 if (input_dim(2)-1)/2 <= chan_len
     error('Sameple dimension too small!')
@@ -33,9 +36,9 @@ fclose(fid);
 %% Generate ISI channel & modulation mapper
 h = randn(1, chan_len) + 1j * randn(1, chan_len);
 h = h .* exp(-[0:chan_len-1]/4);
+figure; stem(abs(h))
 h = h / norm(h);
 % load('h_save.mat');
-figure; stem(abs(h))
 mod_mapper = qammod([0:mod-1], mod);
 mod_mapper = mod_mapper / norm(mod_mapper) * sqrt(mod);
 
@@ -44,30 +47,9 @@ quan_bits_num = 5;
 quan_max_amp = 2;
 quan_switch = 0;
 
-%% Generate sample data
-pilot_symbols = randi(mod, 1, pilot_num);
-pilot_chan_in = [zeros(1, padding_num), mod_mapper(pilot_symbols), zeros(1, padding_num)];
-pilot_chan_out = conv(pilot_chan_in, h);
-
-if quan_switch == 1
-    temp1 = real(pilot_chan_out);
-    temp2 = imag(pilot_chan_out);
-    pilot_chan_out = func_quan(temp1, quan_max_amp, quan_bits_num) + ...
-        1j * func_quan(temp2, quan_max_amp, quan_bits_num);
-end
-
-sample_data = zeros(pilot_num, 2 * input_dim(2));
-sample_tag = zeros(pilot_num, output_dim);
+%% Generate all data
 I_mat = eye(mod);
-for id_pilot = 1:pilot_num
-    sym_index = padding_num + id_pilot;
-    temp = pilot_chan_out(sym_index-padding_num:sym_index+padding_num);
-    sample_data(id_pilot, :) = [real(temp), imag(temp)];
-    sample_tag(id_pilot, :) = I_mat(:, pilot_symbols(id_pilot)).';
-end
-
-%% Generate test data
-data_symbols = randi(mod, 1, data_num);
+data_symbols = randi(mod, 1, total_num);
 data_chan_in = [zeros(1, padding_num), mod_mapper(data_symbols), zeros(1, padding_num)];
 data_chan_out = conv(data_chan_in, h);
 
@@ -78,13 +60,27 @@ if quan_switch == 1
         1j * func_quan(temp2, quan_max_amp, quan_bits_num);
 end
 
-test_data = zeros(data_num, 2 * input_dim(2));
-test_tag = zeros(data_num, output_dim);
-for id_data = 1:data_num
+test_data = zeros(total_num, 2 * input_dim(2));
+test_tag = zeros(total_num, output_dim);
+for id_data = 1:total_num
     sym_index = padding_num + id_data;
     temp = data_chan_out(sym_index-padding_num:sym_index+padding_num);
     test_data(id_data, :) = [real(temp), imag(temp)];
     test_tag(id_data, :) = I_mat(:, data_symbols(id_data)).';
+end
+
+% sample indices
+
+% sample_data
+sample_data = test_data(sample_indices, :);
+sample_tag = test_tag(sample_indices, :);
+
+% test_data
+test_data(sample_indices, :) = [];
+test_tag(sample_indices, :) = [];
+
+if size(test_data, 1) ~= data_num
+    error('Wrong size!');
 end
 
 %% Save
@@ -163,3 +159,6 @@ if SER_eval
     ylabel('Symbol Error Rate');
     grid on;
 end
+
+
+

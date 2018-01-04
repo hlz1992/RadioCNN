@@ -11,8 +11,9 @@ chan_len = 16;
 input_dim = [2, 41];    % channeled symbols
 output_dim = mod;
 
-total_num = 20e4;
-sample_indices = [1:4:total_num].';
+total_num = 3e4;
+sample_indices_temp = randerr(1, total_num, 2e4);
+sample_indices = find(sample_indices_temp > 0).';
 pilot_num = length(sample_indices);
 data_num = total_num - pilot_num;
 
@@ -35,9 +36,15 @@ fclose(fid);
 %% Generate ISI channel & modulation mapper
 h = randn(1, chan_len) + 1j * randn(1, chan_len);
 h = h .* exp(-[0:chan_len-1]/4);
+
+% Apply channel variation
+figure; stem(abs(h))
+h = h + (randn(1, chan_len) + 1j * randn(1, chan_len)) * 1e-1;
+hold on;
+stem(abs(h), 'r');
+
 h = h / norm(h);
 % load('h_save.mat');
-figure; stem(abs(h))
 mod_mapper = qammod([0:mod-1], mod);
 mod_mapper = mod_mapper / norm(mod_mapper) * sqrt(mod);
 
