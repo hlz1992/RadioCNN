@@ -11,8 +11,8 @@ chan_len = 16;
 input_dim = [2, 41];    % channeled symbols
 output_dim = mod;
 
-total_num = 3e4;
-sample_indices_temp = randerr(1, total_num, 2e4);
+total_num = 11000;
+sample_indices_temp = randerr(1, total_num, 1e3);
 sample_indices = find(sample_indices_temp > 0).';
 pilot_num = length(sample_indices);
 data_num = total_num - pilot_num;
