@@ -60,8 +60,6 @@ for id_data = 1:total_num
     test_tag(id_data, :) = I_mat(:, data_symbols(id_data)).';
 end
 
-% sample indices
-
 % sample_data
 sample_data = test_data(sample_indices, :);
 sample_tag = test_tag(sample_indices, :);
@@ -77,37 +75,66 @@ end
 %% Add noise & save
 SNRdBRng = linspace(0, 7, 5);
 
-test_data_noiseless = test_data;
-sample_data_noiseless = sample_data;
+test_data_bak = test_data;
+sample_data_bak = sample_data;
 sample_tag_bak = sample_tag;
+
 for id_SNR = 1:length(SNRdBRng)
     SNR = 10^(SNRdBRng(id_SNR) / 10);
-    test_data = test_data_noiseless + randn(size(test_data_noiseless)) / (2 * SNR);
-    sample_data = sample_data_noiseless + randn(size(sample_data_noiseless)) / (2 * SNR);
+    
+    test_data = test_data_bak + randn(size(test_data_bak)) / (2 * SNR);
+    sample_data = sample_data_bak + randn(size(sample_data_bak)) / (2 * SNR);
     sample_tag = sample_tag_bak;
     
     if pilot_augmentation
         %%  Apply pilot augmentation
-        aug_ratio = 2;
-        cast_table = [3, 1, 4, 2];
+        rotation_cast_table = [2, 4, 1, 3];
+        conjection_cast_table = [3, 1, 4, 2];
         
-        sample_data_aug = zeros(aug_ratio*size(sample_data, 1), size(sample_data, 2));
-        sample_tag_aug = zeros(aug_ratio*size(sample_tag, 1), size(sample_tag, 2));
+        sample_data_aug = zeros(20 * pilot_num, size(sample_data, 2));
+        sample_tag_aug = zeros(20 * pilot_num, size(sample_tag, 2));
+        aug_count = 1;
         
         for id_sample = 1:size(sample_data, 1)
-            
             this_data = sample_data(id_sample, :);
-            this_tag = sample_tag(id_sample, :);
+            this_data = this_data(1:length(this_data)/2) + ...
+                1j * this_data(length(this_data)/2+1:end);
+            this_symbol = find(sample_tag(id_sample, :) > 0);
             
-            error('Not yet implemented...');
+            % Method I: Constellation rotation
+            this_data_aug1 = this_data * exp(1j * pi / 2);
+            this_symbol_aug1 = rotation_cast_table(this_symbol);
+            sample_data_aug(aug_count, :) = [real(this_data_aug1), imag(this_data_aug1)];
+            sample_tag_aug(aug_count, :) = I_mat(:, this_symbol_aug1).';
+            aug_count = aug_count + 1;
             
-            sample_data_aug((id_sample-1)*aug_ratio+1:id_sample*aug_ratio, :) = sample_aug;
-            sample_tag_aug((id_sample-1)*aug_ratio+1:id_sample*aug_ratio, :) = tag_aug;
+            this_data_aug2 = this_data_aug1 * exp(1j * pi / 2);
+            this_symbol_aug2 = rotation_cast_table(this_symbol_aug1);
+            sample_data_aug(aug_count, :) = [real(this_data_aug2), imag(this_data_aug2)];
+            sample_tag_aug(aug_count, :) = I_mat(:, this_symbol_aug2).';
+            aug_count = aug_count + 1;
+            
+            this_data_aug3 = this_data_aug2 * exp(1j * pi / 2);
+            this_symbol_aug3 = rotation_cast_table(this_symbol_aug2);
+            sample_data_aug(aug_count, :) = [real(this_data_aug3), imag(this_data_aug3)];
+            sample_tag_aug(aug_count, :) = I_mat(:, this_symbol_aug3).';
+            aug_count = aug_count + 1;
+            
+            % Method II: channel conjection
+            this_data_aug4 = imag(this_data) - 1j * real(this_data);
+            this_symbol_aug4 = conjection_cast_table(this_symbol);
+            sample_data_aug(aug_count, :) = [real(this_data_aug4), imag(this_data_aug4)];
+            sample_tag_aug(aug_count, :) = I_mat(:, this_symbol_aug4).';
+            aug_count = aug_count + 1;
         end
+        
+        pilot_num = aug_count - 1;
+        sample_data_aug = sample_data_aug(1:pilot_num, :);
+        sample_tag_aug = sample_tag_aug(1:pilot_num, :);
+        
         sample_data = sample_data_aug;
         sample_tag = sample_tag_aug;
         
-        pilot_num = size(sample_data, 1);
         file_name = ['..\conv_chan_data_AUG_idSNR_', num2str(id_SNR), '.mat'];
         save(file_name, 'test_data', 'test_tag', 'sample_data', 'sample_tag');
     else
@@ -115,8 +142,9 @@ for id_SNR = 1:length(SNRdBRng)
         file_name = ['..\conv_chan_data_idSNR_', num2str(id_SNR), '.mat'];
         save(file_name, 'test_data', 'test_tag', 'sample_data', 'sample_tag');
     end
-    
 end
+
+disp(['Number of pilots after augmentation: ', num2str(pilot_num)]);
 
 %% Write parameter files
 fid = fopen('..\matlab_params.py', 'w');

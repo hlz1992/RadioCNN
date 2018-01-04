@@ -229,7 +229,7 @@ def main(argv=None):
             chan_data = chan_data, 
             output_process=True, 
             show_performance=False,
-            MAX_PILOT_NUM=6000,
+            MAX_PILOT_NUM=4000,
             TRAINING_STEPS=20000
         )
         SER[id_SNR] = 1 - Accuracy
