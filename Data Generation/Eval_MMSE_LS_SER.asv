@@ -56,6 +56,10 @@ if SER_eval
         
 %         h_esti = h.';        % TEST
         h_esti = A_pilot' * inv(A_pilot * A_pilot' + 1/SNR * eye(size(A_pilot, 1))) * y;
+        if id_SNR == 5
+            figure; hol
+            error('~~~')
+        end
 
         H_esti = zeros(test_data_num+chan_len-1, test_data_num);
         for id_data = 1:test_data_num
