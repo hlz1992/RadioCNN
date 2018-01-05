@@ -6,6 +6,10 @@ import os
 import matplotlib.pyplot as plt
 import time
 
+# For reproductivity
+np.random.seed(13)
+tf.set_random_seed(2)
+
 # Define network parameters
 # Input layer
 INPUT_DIM = [2, matlab_input_dim[1]]
@@ -100,6 +104,9 @@ class RadioCNN(object):
         self.sess = tf.Session()
         self.sess.run(init_op)
 
+        # saver
+        self.saver = tf.train.Saver()
+
         # finalize
         # self.sess.graph.finalize()
 
@@ -144,6 +151,12 @@ class RadioCNN(object):
 
     def get_weights(self):
         return self.w_dict
+
+    def save_model(self, path_name):
+        self.saver.save(self.sess, path_name)
+
+    def restore_model(self, path_name):
+        self.saver.restore(self.sess, path_name)
 
 # Initiate RadioNN
 def initiate_RadioCNN(transfer_function = tf.nn.softplus, optimizer=tf.train.AdamOptimizer, learning_rate=1e-4, weight_loss=0.05):
@@ -205,6 +218,9 @@ def train(radioCNN, chan_data, output_process=False, show_performance=False, MAX
 
     return test_accuracy, radioCNN
 
+MODEL_PATH_NAME = './model/model_single_SNR.ckpt'
+MAT_FILE_NAME = './conv_chan_data_AUG_idSNR_5.mat'
+
 # Define main function
 def main(argv=None):
 
@@ -218,18 +234,16 @@ def main(argv=None):
     
     start_time = time.time()
 
-    MAT_FILE_NAME = './conv_chan_data_AUG_idSNR_5.mat'
     chan_data = scio.loadmat(MAT_FILE_NAME)
 
     # Begin training (reference: MAX_PILOT_NUM = 1000, TRAINING_STEPS = 20000)
     Accuracy, radioCNN_inst = train(
         radioCNN = radioCNN_inst,
         chan_data = chan_data, 
-        output_process=True, 
+        output_process=False, 
         show_performance=False,
         MAX_PILOT_NUM=4000,
-        TRAINING_STEPS=200
-        # TRAINING_STEPS=20000
+        TRAINING_STEPS=5000
     )
     SER_val = 1 - Accuracy
 
@@ -244,9 +258,7 @@ def main(argv=None):
     scio.savemat('./CNN_layer_outputs.mat', {'conv1_flat_ou': conv1_flat_ou, 'fc1_ou': fc1_ou, 'fc2_ou': fc2_ou, 'cnn_ou': cnn_ou})
     
     # Save trained network
-    saver = tf.train.Saver()
-    saver.save(radioCNN_inst.sess, './model/model_single_SNR.ckpt')
-    print('done.')
+    radioCNN_inst.save_model(MODEL_PATH_NAME)
 
 
 if __name__ == '__main__':

@@ -6,6 +6,10 @@ import os
 import matplotlib.pyplot as plt
 import time
 
+# For reproductivity
+np.random.seed(13)
+tf.set_random_seed(2)
+
 # Define network parameters
 # Input layer
 INPUT_DIM = [2, matlab_input_dim[1]]
@@ -229,9 +233,10 @@ def main(argv=None):
             chan_data = chan_data, 
             output_process=True, 
             show_performance=False,
-            MAX_PILOT_NUM=4000,
-            TRAINING_STEPS=20000
+            MAX_PILOT_NUM=6000,
+            TRAINING_STEPS=10000
         )
+        
         SER[id_SNR] = 1 - Accuracy
 
         print('Total SER = {0}.'.format(SER[id_SNR]))

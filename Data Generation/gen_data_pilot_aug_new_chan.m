@@ -29,7 +29,7 @@ h = randn(1, chan_len) + 1j * randn(1, chan_len);
 h = h .* exp(-[0:chan_len-1]/4);
 h = h / norm(h);
 h0 = h;
-h = h0 + (randn(1, chan_len) + 1j * randn(1, chan_len)) * sqrt(1e-1 / (2 * chan_len));
+h = h0 + (randn(1, chan_len) + 1j * randn(1, chan_len)) * sqrt(1e-2 / (2 * chan_len));
 
 figure; hold on;
 stem(abs(h0)); stem(abs(h), 'r')
