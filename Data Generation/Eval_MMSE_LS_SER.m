@@ -54,8 +54,8 @@ if SER_eval
         % Channel estimation
         y = pilot_noise_out(1:pilot_num+chan_len-1).';
         
-%         h_esti = h.';        % TEST
-        h_esti = A_pilot' * inv(A_pilot * A_pilot' + 1/SNR * eye(size(A_pilot, 1))) * y;
+        h_esti = h.';        % TEST
+%         h_esti = A_pilot' * inv(A_pilot * A_pilot' + 1/SNR * eye(size(A_pilot, 1))) * y;
 
         H_esti = zeros(test_data_num+chan_len-1, test_data_num);
         for id_data = 1:test_data_num
