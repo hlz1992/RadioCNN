@@ -150,7 +150,7 @@ class RadioCNN(object):
         return accuracy
 
     def get_weights(self):
-        return self.w_dict
+        return self.sess.run(self.w_dict)
 
     def save_model(self, path_name):
         self.saver.save(self.sess, path_name)
@@ -219,7 +219,9 @@ def train(radioCNN, chan_data, output_process=False, show_performance=False, MAX
     return test_accuracy, radioCNN
 
 MODEL_PATH_NAME = './model/model_single_SNR.ckpt'
-MAT_FILE_NAME = './conv_chan_data_AUG_idSNR_5.mat'
+
+# MAT_FILE_NAME = './conv_chan_data_AUG_idSNR_5.mat'
+MAT_FILE_NAME = './conv_chan_data_AUG_idSNR_5_nc.mat'
 
 # Define main function
 def main(argv=None):
@@ -240,25 +242,23 @@ def main(argv=None):
     Accuracy, radioCNN_inst = train(
         radioCNN = radioCNN_inst,
         chan_data = chan_data, 
-        output_process=False, 
+        output_process=True, 
         show_performance=False,
-        MAX_PILOT_NUM=4000,
-        TRAINING_STEPS=5000
+        MAX_PILOT_NUM=6000,
+        TRAINING_STEPS=10000
     )
     SER_val = 1 - Accuracy
 
     print('Total SER = {0}.'.format(SER_val))
     print('Time consumed is {0} seconds'.format(time.time() - start_time))
     
-    # Generate layer outputs & save them
-    conv1_flat_ou, fc1_ou, fc2_ou, cnn_ou = radioCNN_inst.eval_layer_outputs(
-        chan_data['test_data'][0:999, :],
-        chan_data['test_tag'][0:999, :]
-    )
-    scio.savemat('./CNN_layer_outputs.mat', {'conv1_flat_ou': conv1_flat_ou, 'fc1_ou': fc1_ou, 'fc2_ou': fc2_ou, 'cnn_ou': cnn_ou})
-    
+    # Save weights
+    w_dict = radioCNN_inst.get_weights()
+    # scio.savemat('./RadioCNN_weights.mat', w_dict)
+    scio.savemat('./RadioCNN_weights_nc.mat', w_dict)
+
     # Save trained network
-    radioCNN_inst.save_model(MODEL_PATH_NAME)
+    # radioCNN_inst.save_model(MODEL_PATH_NAME)
 
 
 if __name__ == '__main__':
